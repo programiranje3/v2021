@@ -38,8 +38,8 @@ TASK 4:
 Write a function that receives a string with a mix of lower and upper case letters.
 The function arranges letters in such a way that all lowercase letters come first,
 followed by all upper case letters. Non-letter characters (if any) are ignored, that is,
-not included in the new 'rearranged' string.
-The new,'rearranged' string is the function's return value.
+not included in the new 're-arranged' string.
+The new,'re-arranged' string is the function's return value.
 """
 # def rearrange_string(string):
 
@@ -79,6 +79,8 @@ where each digit of a number is even. The numbers that match this criterion
 should be printed as a comma-separated sequence.
 """
 # def numbers_with_all_even_digits():
+
+
 
 
 if __name__ == '__main__':
