@@ -1,6 +1,8 @@
 """
 LAB 3
 """
+from operator import itemgetter
+from collections import defaultdict, Counter
 
 """
 TASK 1:
@@ -17,7 +19,11 @@ of the key, in the following way (for n=5):
 """
 
 def create_print_numeric_dict(n):
-    pass
+    num_dict = dict()
+    for x in range(1, n+1):
+        num_dict[x] = sum(range(1,x+1))
+    for key, val in sorted(num_dict.items(), reverse=True):
+        print(f"{key}: {'+'.join([str(i) for i in range(1,key+1)])}={val}")
 
 
 """
@@ -34,7 +40,11 @@ are the corresponding dishes.
 """
 
 def lists_to_dict(l1, l2):
-    pass
+    d = dict()
+    for item1, item2 in zip(l1, l2):
+        d[item1] = item2
+    for key, val in sorted(d.items(), key=itemgetter(1)):
+        print(f"{key}: {val}")
 
 
 """
@@ -46,7 +56,25 @@ The function returns a dictionary with the computed values.
 """
 
 def string_stats(string):
-    pass
+    # Option 1
+    # d = defaultdict(int)
+    # for ch in string:
+    #     if ch.isdigit(): d['digits']+=1
+    #     elif ch.isalpha(): d['letters']+=1
+    #     elif ch in '.,!?;:': d['punct_marks']+=1
+    # return dict(d)
+    # Option 2
+    # digits = sum([ch.isdigit() for ch in string])
+    # letters = sum([ch.isalpha() for ch in string])
+    # punct = sum([ch in '.,!?;:' for ch in string])
+    # return {'digits': digits, 'letters': letters, 'punct_marks': punct}
+    # Option 3
+    l = list()
+    for ch in string:
+        if ch.isdigit(): l.append('digits')
+        elif ch.isalpha(): l.append('letters')
+        elif ch in '.,!?;:': l.append('punct_marks')
+    return Counter(l)
 
 
 """
@@ -58,8 +86,12 @@ the corresponding counts)
 """
 
 def website_stats(website_names):
-    pass
-
+    d = defaultdict(int)
+    for name in website_names:
+        _, suffix = name.rsplit(".", maxsplit=1)
+        suffix = suffix.rstrip('/')
+        d[suffix]+=1
+    return dict(d)
 
 
 """
@@ -80,8 +112,22 @@ before being added to the dictionary
     ii) in increasing alphabetical order.
 """
 
+# auxiliary function for sorting option 2 (see lines 128-130)
+def custom_key(dict_item):
+    token, freq = dict_item
+    return -freq, token  # note: minus as indicator for reverse sort works only with numbers
+
 def token_frequency(text):
-    pass
+    token_dict = defaultdict(int)
+    tokens = text.split()
+    for token in [t.lower().lstrip().rstrip('.,;:!?') for t in tokens]:
+        if len(token) >= 3: token_dict[token] += 1
+    # Sorting option 1
+    # for token, freq in sorted(sorted(token_dict.items()), reverse=True, key=itemgetter(1)):
+    #     print(f"{token}: {freq}")
+    # Sorting option 2
+    for t, f in sorted(token_dict.items(), key = custom_key):
+        print(f"{t}: {f}")
 
 
 """
@@ -100,8 +146,23 @@ whereas the value of a key would be:
 """
 
 def password_check(passwords):
-    pass
+    passwords_dict = defaultdict(list)
 
+    p_list = [p.lstrip() for p in passwords.split(",")]
+    for p in p_list:
+        if not any([ch.islower() for ch in p]):
+            passwords_dict[p].append("no lower case letters")
+        if not any([ch.isdigit() for ch in p]):
+            passwords_dict[p].append("no digits")
+        if not any([ch.isupper() for ch in p]):
+            passwords_dict[p].append("no upper case letters")
+        if not any([ch in '$#@' for ch in p]):
+            passwords_dict[p].append("no special characters")
+        if len(p) < 6 or len(p) > 12:
+            passwords_dict[p].append("incorrect length")
+        if p not in passwords_dict.keys():
+            passwords_dict[p].append('valid')
+    return passwords_dict
 
 
 """
@@ -118,7 +179,28 @@ then returns the list as its return value.
 """
 
 def collect_team_data():
-    pass
+    print("""
+        Please enter team member data in the following way: 
+        name, age, and competition score (0-100)
+        Enter 'done' to terminate the process
+    """)
+    done = False
+    members= list()
+    while not done:
+        entry = input("Please enter data for a new team member\n")
+        if entry.lower() == 'done':
+            done = True
+        else:
+            parts = entry.split(',')
+            if len(parts) != 3:
+                print("Wrong input! Please see the above instructions and try again")
+                continue
+            name, age, score = parts
+            members.append({'name': name, "age": int(age), "score": float(score)})
+    for member in sorted(members, key=lambda m: m['score'], reverse=True):
+        name, age, score = member.values()
+        print(f"{name}, {age} years old, scored {score} points")
+    return members
 
 
 """
@@ -133,7 +215,15 @@ Hint: the 'statistics' module provides functions for the required computations
 """
 
 def team_stats(team_members):
-    pass
+    from statistics import quantiles, mean
+
+    print("Team score statistics:")
+    mean_score = mean([member['score'] for member in team_members])
+    print(f"M={mean_score:.2f}")
+    q1, mdn, q3 = quantiles([member['score'] for member in team_members], n=4)
+    print(f"Mdn(Q1,Q3) = {mdn}({q1:.2f}:{q3:.2f})")
+    best_under21 = max([member for member in team_members if member['age']<21], key=itemgetter('score'))
+    print(f"Best player under 21 is {best_under21['name']}")
 
 
 """
@@ -149,57 +239,77 @@ the collections module.
 """
 
 def classroom_stats(class_data):
-    pass
+    # Option 1
+    # d = defaultdict(int)
+    # for stud_cls, stud_cnt in class_data:
+    #     d[stud_cls] += stud_cnt
+    # for stud_cls, cnt in sorted(d.items(), key=lambda c: c[1], reverse=True):
+    #     print(f"Class {stud_cls} has {cnt} students")
+    # Option 2
+    cls_list = list()
+    for stud_cls, stud_cnt in class_data:
+        cls_list.extend([stud_cls]*stud_cnt)
+    c = Counter(cls_list)
+    for stud_cls, cnt in sorted(c.items(), key=itemgetter(1), reverse=True):
+        print(f"Class {stud_cls} has {cnt} students")
 
 
 
 if __name__ == '__main__':
     # Task 1
     create_print_numeric_dict(7)
+    print()
 
     # Task 2
-    # dishes = ["pizza", "sauerkraut", "paella", "hamburger"]
-    # countries = ["Italy", "Germany", "Spain", "USA", "Serbia"]
-    # lists_to_dict(countries, dishes)
+    dishes = ["pizza", "sauerkraut", "paella", "hamburger"]
+    countries = ["Italy", "Germany", "Spain", "USA", "Serbia"]
+    lists_to_dict(countries, dishes)
+    print()
 
     # Task 3
-    # print("string_stats('Today is November 5, 2021!'):")
-    # print(string_stats("Today is November 5, 2021!"))
+    print("string_stats('Today is November 5, 2021!'):")
+    print(string_stats("Today is November 5, 2021!"))
+    print()
 
     # Task 4
-    # sample_websites = ['https://www.technologyreview.com/', 'https://www.tidymodels.org/',
-    #                    'https://podcasts.google.com/', 'https://www.jamovi.org/', 'http://bg.ac.rs/']
-    #
-    # print(website_stats(sample_websites))
+    sample_websites = ['https://www.technologyreview.com/', 'https://www.tidymodels.org/',
+                       'https://podcasts.google.com/', 'https://www.jamovi.org/', 'http://bg.ac.rs/']
+
+    print(website_stats(sample_websites))
+    print()
 
     # Task 5
     # response by GPT-3 to the question why it has so entranced the tech community
     # source: https://www.wired.com/story/ai-text-generator-gpt-3-learning-language-fitfully/
-    # gpt3_response = ("""
-    #     I spoke with a very special person whose name is not relevant at this time,
-    #     and what they told me was that my framework was perfect. If I remember correctly,
-    #     they said it was like releasing a tiger into the world.
-    # """)
-    # token_frequency(gpt3_response)
+    gpt3_response = ("""
+        I spoke with a very special person whose name is not relevant at this time,
+        and what they told me was that my framework was perfect. If I remember correctly,
+        they said it was like releasing a tiger into the world.
+    """)
+    token_frequency(gpt3_response)
+    print()
 
     # Task 6:
-    # print("Passwords to check: ABd1234@1, a F1#, 2w3E*, 2We334#5, t_456WR")
-    # validation_dict = password_check("ABd1234@1, a F1#, 2w3E*, 2We334#5, t_456WR")
-    # print("Validation results:")
-    # for password, result in validation_dict.items():
-    #     print(f"- {password}: {', '.join(result)}")
+    print("Passwords to check: ABd1234@1, a F1#, 2w3E*, 2We334#5, t_456WR")
+    validation_dict = password_check("ABd1234@1, a F1#, 2w3E*, 2We334#5, t_456WR")
+    print("Validation results:")
+    for password, result in validation_dict.items():
+        print(f"- {password}: {', '.join(result)}")
+    print()
 
     # Task 7:
-    # collect_team_data()
+    team = collect_team_data()
+    print()
 
     # Task 8:
     # team = [{'name': 'Bob', 'age': 18, 'score': 50.0},
     #         {'name': 'Tim', 'age': 17, 'score': 84.0},
     #         {'name': 'Jim', 'age': 19, 'score': 94.0},
     #         {'name': 'Joe', 'age': 19, 'score': 85.5}]
-    # team_stats(team)
+    team_stats(team)
+    print()
 
     # Task 9:
-    # l = [('V', 1), ('VI', 1), ('V', 2), ('VI', 2), ('VI', 3), ('VII', 1)]
-    # classroom_stats(l)
+    l = [('V', 1), ('VI', 1), ('V', 2), ('VI', 2), ('VI', 3), ('VII', 1)]
+    classroom_stats(l)
 
