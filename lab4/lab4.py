@@ -140,7 +140,7 @@ if __name__ == '__main__':
     # print()
 
     # Task 2
-    # str_list = ['yellowy', 'Bob', 'lovely', 'yesterday', 'too']
+    # str_list = ['yellowy', 'Bob', 'lovely', 'Yesterday', 'too']
     # print(select_strings(*str_list))
     # print()
 
