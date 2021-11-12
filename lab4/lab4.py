@@ -1,6 +1,7 @@
 """
 LAB 4
 """
+from functools import reduce
 
 """
 TASK 1:
@@ -16,6 +17,14 @@ For an example and explanation of reduce() f. check, for example, these articles
 - https://www.python-course.eu/python3_lambda.php
 """
 
+def compute_product(*numbers, absolute=False):
+    # Option 1
+    # p = 1
+    # for num in numbers:
+    #     p *= abs(num) if absolute else num
+    # return p
+    # Option 2
+    return reduce(lambda a,b: a*b, [abs(num) if absolute else num for num in numbers])
 
 
 """
@@ -31,6 +40,17 @@ Implement the function in three different ways:
 3) using the filter() f. together with an appropriate lambda f.
 """
 
+def select_strings(*strings, threshold=3):
+    # Option 1
+    # selection = list()
+    # for s in strings:
+    #     if s.lower()[0]==s.lower()[-1] and len(set(s)) > threshold:
+    #         selection.append(s)
+    # return selection
+    # Option 2
+    # return [s for s in strings if s.lower()[0]==s.lower()[-1] and len(set(s)) > threshold]
+    # Option 3
+    return list(filter(lambda s: (s.lower()[0]==s.lower()[-1]) and (len(set(s)) > threshold), strings))
 
 
 """
@@ -50,6 +70,26 @@ Implement the function in three different ways:
 2) using list comprehension
 3) using the map() f. together with an appropriate auxiliary function
 """
+
+def process_product_orders(orders, discount=None, shipping=100):
+    def apply_discount(price):
+        return price * (1-discount/100) if discount else price
+    # Option 1
+    # processed_orders = list()
+    # for id, _, quantity, item_price in orders:
+    #     tot_price = apply_discount(item_price) * quantity
+    #     tot_price += shipping if tot_price < 100 else 0
+    #     processed_orders.append((id, tot_price))
+    # return processed_orders
+    # Option 2
+    # processed_orders = [(id, quantity * apply_discount(item_price)) for id, _, quantity, item_price in orders]
+    # return [(id, tot_price) if tot_price >= 100 else (id, tot_price+shipping) for id, tot_price in processed_orders]
+    # Option 3
+    def process_order(order):
+        id, _, quantity, item_price = order
+        tot_price = apply_discount(item_price) * quantity
+        return (id, tot_price + shipping) if tot_price < 100 else (id, tot_price)
+    return list(map(process_order, orders))
 
 
 """
@@ -71,6 +111,17 @@ def decorator(func):
 Hint 2: to measure the time of function execution, use the perf_counter() f.
 from the time module (it returns a float value representing time in seconds).
 """
+import functools
+def timer(func):
+     @functools.wraps(func)
+     def wrapper_timer(*args, **kwargs):
+         from time import perf_counter
+         start_time = perf_counter()
+         value = func(*args, **kwargs)
+         duration = perf_counter() - start_time
+         print(f"Function {func.__name__} completed in {duration:.4f} seconds")
+         return value
+     return wrapper_timer
 
 
 """
@@ -83,6 +134,25 @@ Write the function in a few different ways - e.g. (1) using a loop; (2) using li
 (3) using the map f. - and decorate each one with the timer to compare their performance
 """
 
+@timer
+def compute_sum(n):
+    tot_sum = 0
+    for x in range(1,n+1):
+        for i in range(1,x+1):
+            tot_sum += i
+    return tot_sum
+
+@timer
+def compute_sum_v2(n):
+    return sum([sum(range(1,x+1)) for x in range(1,n+1)])
+
+@timer
+def compute_sum_v3(n):
+    # Option 1
+    # return sum(map(lambda x: sum(range(1,x+1)), range(1, n+1)))
+    # Option 2
+    sums = map(lambda x: sum(range(1,x+1)), range(1, n+1))
+    return reduce(lambda a,b: a+b, sums)
 
 
 """
@@ -94,7 +164,17 @@ Decorate the function with the timer decorator.
 
 Bonus: assure that each function invocation produces the same results
 """
+@timer
+def mean_median_diff(n, k):
+    from random import randint, seed
+    from statistics import mean, median
 
+    rand_list = list()
+    seed(1)
+    for i in range(n):
+        num = randint(1, k)
+        rand_list.append(num)
+        print(f"After adding {num} to the list, the mean-median difference is {abs(mean(rand_list) - median(rand_list))}")
 
 
 """
@@ -107,6 +187,27 @@ Bonus: before calling the decorated function, print, to the console, its name wi
 parameters (after standardisation)
 """
 
+def standardiser(func):
+    @functools.wraps(func)
+    def wrapper_standardiser(*args, **kwargs):
+
+        from statistics import mean, stdev
+        m = mean(args)
+        sd = stdev(args)
+        z_scores = [(a - m)/sd for a in args]
+
+        print(f"Calling function {func.__name__} with the following positional arguments:\n"
+              f"{', '.join([str(round(a, 4)) for a in z_scores])}\nand these named arguments:\n"
+              f"{', '.join([name + '=' + str(val) for name, val in kwargs.items()])}")
+
+        value = func(*z_scores, **kwargs)
+
+        value = round(value, ndigits=4)
+
+        return value
+
+    return wrapper_standardiser
+
 
 """
 TASK 5.1:
@@ -117,6 +218,20 @@ where n is a named argument with default value 10.
 The function returns the sum of S(x) of all received int values.
 Decorate the function with the standardise decorator.
 """
+
+@standardiser
+def sum_of_sums(*numbers, n=10):
+    # Option 1
+    # tot_sum = 0
+    # for x in numbers:
+    #     tot_sum += sum([x**i for i in range(0,n+1)])
+    # return tot_sum
+    # Option 2
+    def sum_of_x(x):
+        return sum([x**i for i in range(n+1)])
+    # return sum(map(sum_of_x, numbers))
+    # Option 3
+    return reduce(lambda a,b: a+b, map(sum_of_x, numbers))
 
 
 
