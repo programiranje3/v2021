@@ -15,7 +15,7 @@ Create the Passenger class with the following methods:
 
 - get and set methods for the *passport* attribute (using appropriate decorators);
   designate this attribute as private and assure that it is a string of length 6,
-  consisting of digits only
+  consisting of digits only or a 6-digit number.
 
 - a method that sets *is_COVID_safe* based on the value of its input parameters: 
   - evidence type: a string that should be either 'vaccinated' or 'tested_negative'
