@@ -10,7 +10,7 @@ Create the Passenger class with the following methods:
      - name - the passenger's name and surname
      - country - the passanger's country of origin
      - passport - the passenger's passport number
-     - is_covid_safe - a boolean indicator variable; it is true if the passenger is vaccinated 
+     - is_COVID_safe - a boolean indicator variable; it is true if the passenger is vaccinated 
      or has recently been tested negative; the default value of this argument is False
 
 - get and set methods for the *passport* attribute (using appropriate decorators);
