@@ -51,19 +51,127 @@ Furthermore, the following new methods should be added:
 
 """
 
+from datetime import datetime
+from sys import stderr
+import re
+from lab6.passenger import Passenger, EconomyPassenger, BussinessPassenger
+
+class Flight:
+
+    departure_format = "%Y-%m-%d %H:%M"
+
+    def __init__(self, flight_num, departure, route=None, operator=None):
+        self.flight_num = flight_num
+        self.departure = departure
+        self.passengers = list()
+        self.route = route
+        self.operated_by = operator
+
+
+    @property
+    def departure(self):
+        return self.__departure
+
+    @departure.setter
+    def departure(self, value):
+        if isinstance(value, datetime):
+            if value > datetime.now():
+                self.__departure = value
+                return
+        if isinstance(value, str):
+            try:
+                value = datetime.strptime(value, self.departure_format)
+                if value and value > datetime.now():
+                    self.__departure = value
+                    return
+            except ValueError as err:
+                stderr.write(f"{err}\n")
+                stderr.write(f"The departure should be given in {Flight.departure_format} format\n")
+
+        stderr.write(f"Incorrect value for the departure attribute\n")
+        self.__departure = None
+
+    @property
+    def route(self):
+        return self.__route
+
+    @route.setter
+    def route(self, value):
+        if isinstance(value, (tuple, list)) and len(value) == 2:
+            self.__route = value
+            return
+        elif isinstance(value, str):
+            parts = re.split('[,->]', value)
+            if len(parts) == 2:
+                orig, dest = parts
+                self.__route = orig.strip(), dest.strip()
+                return
+
+        stderr.write("Error while setting route\n")
+        self.__route = None
+
+
+    def add_passenger(self, p, price):
+        if not isinstance(p, Passenger):
+            print(f"Error! Wrong input: expected a Passenger object, got {type(p)} object")
+            return
+        if (p not in self.passengers) and p.checked_in:
+            self.passengers.append(p)
+            p.airfare = price
+            print(f"Successfully added: {p.name}")
+        else:
+            print(f"Error, passenger {p.name} could not be added, since the passenger is already "
+                  f"in the passengers list")
+
+    def __str__(self):
+        flight_str = f"Data about flight {self.flight_num}:\n"
+        flight_str += f"\tdeparture date and time: " \
+                      f"{datetime.strftime(self.departure, self.departure_format) if self.departure else 'unknown'}\n"
+
+        if self.route:
+            origin, dest = self.route
+            flight_str += f"\troute: {origin} -> {dest}\n"
+        if self.operated_by:
+            flight_str += f"\tflight operator: {self.operated_by}\n"
+        if len(self.passengers) == 0:
+            flight_str += "\tpasengers: none yet"
+        else:
+            flight_str += "\tpassengers:\n\t" + "\t".join([str(p) + "\n" for p in self.passengers])
+        return flight_str
+
+    def time_till_departure(self):
+        if self.departure:
+            time_left = self.departure - datetime.now()
+            hours_left, rest_sec = divmod(time_left.seconds, 3600)
+            mins_left, rest_sec = divmod(rest_sec, 60)
+            return time_left.days, hours_left, mins_left
+
+        print("Departure time is still unknown")
+        return None
+
+
+    def __iter__(self):
+        self.__iter_counter = 0
+        return self
+
+    def __next__(self):
+        if self.__iter_counter == len(self.passengers):
+            raise StopIteration
+        next_passenger = self.passengers[self.__iter_counter]
+        self.__iter_counter += 1
+        return next_passenger
+
 
 
 if __name__ == '__main__':
 
-    pass
+    lh1411 = Flight('LH1411', '2021-12-10 6:50', ('Belgrade', 'Munich'))
+    print(lh1411)
+    print()
 
-    # lh1411 = Flight('LH1411', '2021-12-10 6:50', ('Belgrade', 'Munich'))
-    # print(lh1411)
-    # print()
-    #
-    # lh992 = Flight('LH992', '2021-12-29 12:20', 'Belgrade > Frankfurt', 'Lufthansa')
-    # print(lh992)
-    # print()
+    lh992 = Flight('LH992', '2021-12-29 12:20', 'Belgrade -> Frankfurt', 'Lufthansa')
+    print(lh992)
+    print()
     #
     # lh1514_dict = {'fl_num':'lh1514',
     #                'departure': '2021-12-30 16:30',
