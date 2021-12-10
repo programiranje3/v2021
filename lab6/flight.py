@@ -54,7 +54,7 @@ Furthermore, the following new methods should be added:
 from datetime import datetime
 from sys import stderr
 import re
-from lab6.passenger import Passenger, EconomyPassenger, BussinessPassenger
+from lab6.passenger import Passenger, EconomyPassenger, BusinessPassenger
 
 class Flight:
 
@@ -115,7 +115,7 @@ class Flight:
         if not isinstance(p, Passenger):
             print(f"Error! Wrong input: expected a Passenger object, got {type(p)} object")
             return
-        if (p not in self.passengers) and p.checked_in:
+        if (p not in self.passengers):
             self.passengers.append(p)
             p.airfare = price
             print(f"Successfully added: {p.name}")
@@ -162,61 +162,95 @@ class Flight:
         return next_passenger
 
 
+    @classmethod
+    def from_dict(cls, flight_dict):
+
+        def value_or_None(key):
+            return flight_dict[key] if key in flight_dict.keys() else None
+
+        try:
+            return cls(flight_dict['fl_num'], flight_dict['departure'],
+                       (flight_dict['origin'], flight_dict['destination']),
+                       flight_dict['operator'])
+        except KeyError as err:
+            stderr.write(f"Error due to invalid input value - expected:\n{err}\n")
+            stderr.write("Will create a flight object with available valid data\n")
+
+            return cls(value_or_None('fl_num'), value_or_None('departure'),
+                       (value_or_None('origin'), value_or_None('destination')),
+                       value_or_None('operator'))
+
+    def not_checkedin_generator(self):
+        not_checkedin_cnt = 0
+        for p in self.passengers:
+            if not p.checked_in:
+                yield p
+                not_checkedin_cnt += 1
+        print(f"Flight {self.flight_num} waiting for {not_checkedin_cnt} passengers to check in")
+
+    def candidates_for_upgrade_generator(self, threshold):
+        candidates = list()
+        for p in self.passengers:
+            if isinstance(p, EconomyPassenger) and p.airfare > threshold and p.checked_in:
+                candidates.append(p)
+        for candidate in sorted(candidates, key=lambda c: c.airfare, reverse=True):
+            yield candidate
+
 
 if __name__ == '__main__':
 
-    lh1411 = Flight('LH1411', '2021-12-10 6:50', ('Belgrade', 'Munich'))
+    lh1411 = Flight('LH1411', '2022-03-20 6:50', ('Belgrade', 'Munich'))
     print(lh1411)
     print()
 
-    lh992 = Flight('LH992', '2021-12-29 12:20', 'Belgrade -> Frankfurt', 'Lufthansa')
+    lh992 = Flight('LH992', '2022-02-25 12:20', 'Belgrade -> Frankfurt', 'Lufthansa')
     print(lh992)
     print()
-    #
-    # lh1514_dict = {'fl_num':'lh1514',
-    #                'departure': '2021-12-30 16:30',
-    #                'operator': 'Lufthansa',
-    #                'origin': 'Paris',
-    #                'destination': 'Berlin'}
-    #
-    # lh1514 = Flight.from_dict(lh1514_dict)
-    # print(lh1514)
-    # print()
-    #
-    #
-    # jim = EconomyPassenger("Jim Jonas", 'UK', '123456')
-    # bill = EconomyPassenger("Billy Stone", 'USA', "917253", is_covid_safe=True)
-    # dona = EconomyPassenger("Dona Stone", 'Australia', "917251", is_covid_safe=True)
-    # kate = BusinessPassenger(name="Kate Fox", country='Canada', passport="114252", is_covid_safe=True)
-    # bob = BusinessPassenger(name="Bob Smith", country='UK', passport="123456", checked_in=True)
-    #
-    # passengers = [jim, bill, dona, kate, bob]
-    # airfares = [450, 950, 1500, 1000, 475]
-    # for p, fare  in zip(passengers, airfares):
-    #     lh992.add_passenger(p, fare)
-    #
-    # print(f"\nAfter adding passengers to flight {lh992.flight_num}:\n")
-    # print(lh992)
-    # print()
-    #
-    # print("Last call to passengers who have not yet checked in!")
-    # for passenger in lh992.not_checkedin_generator():
-    #     print(passenger)
-    #
-    # # check in some economy class passengers to be able to test the next method
-    # dona.checked_in = True
-    # bill.checked_in = True
-    #
-    # print()
-    # print("Passengers offered an upgrade opportunity:")
-    # for ind, passenger in enumerate(lh992.candidates_for_upgrade_generator(500)):
-    #     print(f"{ind+1}. {passenger}")
-    #
-    # print()
-    # print("Candidates for upgrade to business class:")
-    # g = lh992.candidates_for_upgrade_generator(500)
-    # try:
-    #     while True:
-    #         print(next(g))
-    # except StopIteration:
-    #     print("--- end of candidates list ---")
+
+    lh1514_dict = {'fl_num':'lh1514',
+                   'departure': '2021-12-30 16:30',
+                   'operator': 'Lufthansa',
+                   'origin': 'Paris',
+                   'destination': 'Berlin'}
+
+    lh1514 = Flight.from_dict(lh1514_dict)
+    print(lh1514)
+    print()
+
+
+    jim = EconomyPassenger("Jim Jonas", 'UK', '123456')
+    bill = EconomyPassenger("Billy Stone", 'USA', "917253", is_covid_safe=True)
+    dona = EconomyPassenger("Dona Stone", 'Australia', "917251", is_covid_safe=True)
+    kate = BusinessPassenger(name="Kate Fox", country='Canada', passport="114252", is_covid_safe=True)
+    bob = BusinessPassenger(name="Bob Smith", country='UK', passport="123456", checked_in=True)
+
+    passengers = [jim, bill, dona, kate, bob]
+    airfares = [450, 950, 1500, 1000, 475]
+    for p, fare  in zip(passengers, airfares):
+        lh992.add_passenger(p, fare)
+
+    print(f"\nAfter adding passengers to flight {lh992.flight_num}:\n")
+    print(lh992)
+    print()
+
+    print("Last call to passengers who have not yet checked in!")
+    for passenger in lh992.not_checkedin_generator():
+        print(passenger)
+
+    # check in some economy class passengers to be able to test the next method
+    dona.checked_in = True
+    bill.checked_in = True
+
+    print()
+    print("Passengers offered an upgrade opportunity:")
+    for ind, passenger in enumerate(lh992.candidates_for_upgrade_generator(500)):
+        print(f"{ind+1}. {passenger}")
+
+    print()
+    print("Candidates for upgrade to business class:")
+    g = lh992.candidates_for_upgrade_generator(500)
+    try:
+        while True:
+            print(next(g))
+    except StopIteration:
+        print("--- end of candidates list ---")

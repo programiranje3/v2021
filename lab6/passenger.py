@@ -119,7 +119,7 @@ class Passenger:
         if value and self.is_COVID_safe:
             self.__checked_in = value
         elif not self.is_COVID_safe:
-            stderr.write(f"Error! Passenger {self.name} cannot check in since they do not have valid COIVD permit ")
+            stderr.write(f"Error! Passenger {self.name} cannot check in since they do not have valid COIVD permit\n")
 
 
     def __str__(self):
@@ -232,7 +232,7 @@ Create class BusinessPassenger that extends the Passenger class and has:
 
 """
 
-class BussinessPassenger(Passenger):
+class BusinessPassenger(Passenger):
 
     def __init__(self, services=(FlightService.unspecificed,), **kwargs):
         super().__init__(**kwargs)
@@ -269,14 +269,14 @@ if __name__ == '__main__':
     print(bob)
     print()
 
-    mike = BussinessPassenger(name="Mike Stone", country="USA",
+    mike = BusinessPassenger(name="Mike Stone", country="USA",
                              passport='234567', is_covid_safe=True,
                              services=(FlightService.priority_boarding, FlightService.onboard_wifi))
     print(mike)
     print()
     print(mike.__dict__)
 
-    brian = BussinessPassenger(name="Brian Brown", country="UK",
+    brian = BusinessPassenger(name="Brian Brown", country="UK",
                               passport='546234', is_covid_safe=True,
                               services=("priority_boarding", "onboard media", "drinks"))
     print(brian)
