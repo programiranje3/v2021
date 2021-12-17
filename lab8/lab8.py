@@ -41,7 +41,18 @@ def get_content_from_url(url):
     :return: content of the page as string or None
     """
 
+    def response_OK():
+        # print(response.status_code)
+        return response.status_code == requests.codes.ok and \
+               response.headers['content-type'] and \
+               'html' in response.headers['content-type']
 
+    try:
+        with requests.get(url, headers={"User-Agent": "P3_FON"}) as response:
+            return response.text if response_OK() else None
+    except requests.RequestException as err:
+        stderr.write(f"The following error occurred while trying to get content from: {url}:\n{err}\n")
+        return None
 
 
 def scrape_athletes_names(url):
@@ -52,6 +63,25 @@ def scrape_athletes_names(url):
     :return: a list of athletes' names
     """
 
+    athletes_names = list()
+
+    page_content = get_content_from_url(url)
+    if not page_content:
+        stderr.write(f"Could not retrieve content from: {url}\n")
+        return athletes_names
+
+    page_soup = BeautifulSoup(page_content, features='html.parser')
+    if not page_soup:
+        stderr.write(f"Could not parse content from: {url}\n")
+        return athletes_names
+
+    div_element = page_soup.find('div', {'id':'content'})
+    for li in div_element.find('ol').find_all('li'):
+        name = li.find('strong').text
+        if name:
+            athletes_names.append(name.strip())
+
+    return athletes_names
 
 
 def to_json(fpath, data):
@@ -99,6 +129,19 @@ def get_athletes_names(url):
     return athletes_names
 
 
+def get_country_from_str(country_string):
+    complete_string = "".join([s for s in country_string])
+    if ',' in complete_string:
+        _, country = complete_string.rsplit(',', maxsplit=1)
+    else:
+        _, country = complete_string.rsplit(maxsplit=1)
+
+    if country:
+        import re
+        return re.sub('\[\d+\]', "", country).lstrip().rstrip(')')
+
+    return None
+
 
 def retrieve_country_of_origin(name):
     """
@@ -109,6 +152,39 @@ def retrieve_country_of_origin(name):
     :return: country of birth (string) or None
     """
 
+    print(f"Collecting data for {name}")
+
+    page_url = f"https://en.wikipedia.org/wiki/{name.replace(' ', '_')}"
+
+    page_content = get_content_from_url(page_url)
+    if not page_content:
+        stderr.write(f"Could not retrieve page for: {name}\n")
+        return None
+
+    page_soup = BeautifulSoup(page_content, features='html.parser')
+    if not page_soup:
+        stderr.write(f"Could not parse page for: {name}\n")
+        return None
+
+    info_box = page_soup.find('table', class_=lambda c: c and 'infobox' in c and 'vcard' in c)
+    if not info_box:
+        if page_soup.find('div', {'id':'disambigbox'}):
+            stderr.write(f"Arrived at disambiguation page for: {name}\n")
+        else:
+            stderr.write(f"No infobox data for: {name}\n")
+        return None
+
+    th_born = info_box.find('th', text=lambda t: t and ('born' in t.lower() or 'place of birth' in t.lower()))
+    if th_born:
+        td_born = th_born.find_next_sibling('td')
+        if td_born and td_born.stripped_strings:
+            return get_country_from_str(td_born.stripped_strings)
+    else:
+        bold_born = info_box.find(lambda b: b.name=='b' and b.parent.name=='td' and b.text and 'born' in b.text.lower())
+        if bold_born and bold_born.parent.stripped_strings:
+            return get_country_from_str(bold_born.parent.stripped_strings)
+
+    return None
 
 
 def collect_athletes_data(athletes_url):
@@ -177,6 +253,22 @@ def most_represented_countries(athletes_dict):
     are represented in the collected athletes data
     :return: nothing
     """
+
+    country_lbls_dict = create_country_labels_mapping()
+    for athlete, country in athletes_dict.items():
+        for c_name, c_labels in country_lbls_dict.items():
+            if country in c_labels:
+                athletes_dict[athlete] = c_name
+                break
+
+    from collections import defaultdict
+    country_counts = defaultdict(int)
+    for athlete, country in athletes_dict.items():
+        country_counts[country] += 1
+
+    print("Number of top athletes per country of origin:")
+    for country, cnt in sorted(country_counts.items(), key=lambda item: item[1], reverse=True):
+        print(f"{country}: {cnt}")
 
 
 
